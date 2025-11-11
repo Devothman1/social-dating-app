@@ -1,0 +1,14 @@
+{
+  "name": "social-dating-app",
+  "version": "1.0.0",
+  "description": "A comprehensive social dating app combining the best of Facebook and Tinder",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm start",
+    "client": "cd frontend && npm start",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["social", "dating", "app", "react", "node", "mongodb"],
+  "author": "Devothman1",
+  "license": "MIT"
+}
