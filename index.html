@@ -3316,6 +3316,209 @@
         document.querySelectorAll('.online-indicator').forEach(indicator => {
             indicator.style.display = 'block';
         });
+        
+// API Base URL
+const API_BASE = 'http://localhost:5000/api';
+
+// Authentication functions
+class AuthService {
+  static getToken() {
+    return localStorage.getItem('connect_token');
+  }
+
+  static setToken(token) {
+    localStorage.setItem('connect_token', token);
+  }
+
+  static setUser(user) {
+    localStorage.setItem('connect_user', JSON.stringify(user));
+  }
+
+  static getUser() {
+    const user = localStorage.getItem('connect_user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  static logout() {
+    localStorage.removeItem('connect_token');
+    localStorage.removeItem('connect_user');
+    window.location.href = '/';
+  }
+
+  static async register(userData) {
+    try {
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
+  static async login(email, password) {
+    try {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  }
+
+  static async getCurrentUser() {
+    try {
+      const token = this.getToken();
+      if (!token) return null;
+
+      const response = await fetch(`${API_BASE}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      return data.success ? data.user : null;
+    } catch (error) {
+      console.error('Get user error:', error);
+      return null;
+    }
+  }
+}
+
+// Update your existing login form handler
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const result = await AuthService.login(email, password);
+    
+    if (result.success) {
+      AuthService.setToken(result.token);
+      AuthService.setUser(result.user);
+      showScreen('app');
+      loadUserData();
+    } else {
+      alert(result.message);
+    }
+  } catch (error) {
+    alert('Login failed. Please try again.');
+  }
+});
+
+// Update your existing signup form handler
+document.getElementById('signup-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const userData = {
+    name: document.getElementById('signup-name').value,
+    email: document.getElementById('signup-email').value,
+    password: document.getElementById('signup-password').value,
+    age: parseInt(document.getElementById('signup-age').value),
+    gender: document.getElementById('signup-gender').value,
+    city: document.getElementById('signup-city').value,
+    job: document.getElementById('signup-job').value
+  };
+
+  try {
+    const result = await AuthService.register(userData);
+    
+    if (result.success) {
+      AuthService.setToken(result.token);
+      AuthService.setUser(result.user);
+      showScreen('app');
+      loadUserData();
+    } else {
+      alert(result.message);
+    }
+  } catch (error) {
+    alert('Registration failed. Please try again.');
+  }
+});
+
+// Load user data when app starts
+async function loadUserData() {
+  const user = await AuthService.getCurrentUser();
+  if (user) {
+    // Update UI with real user data
+    document.querySelector('.profile-details h3').textContent = user.name;
+    document.querySelector('.profile-details p').textContent = user.job;
+    document.querySelector('.profile-details-main h2').textContent = user.name;
+    document.querySelector('.profile-details-main p').textContent = user.job;
+    
+    // Load posts, friends, etc.
+    loadPosts();
+    loadDiscoverUsers();
+  }
+}
+
+// Load posts from backend
+async function loadPosts() {
+  try {
+    const token = AuthService.getToken();
+    const response = await fetch(`${API_BASE}/posts`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update your posts rendering logic here
+      console.log('Loaded posts:', data.posts);
+    }
+  } catch (error) {
+    console.error('Error loading posts:', error);
+  }
+}
+
+// Load discover users
+async function loadDiscoverUsers() {
+  try {
+    const token = AuthService.getToken();
+    const response = await fetch(`${API_BASE}/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update your discover page with real users
+      console.log('Loaded users:', data.users);
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+  }
+}
+
+// Update your existing initialization
+document.addEventListener('DOMContentLoaded', async function() {
+  // Check if user is already logged in
+  const user = await AuthService.getCurrentUser();
+  if (user) {
+    showScreen('app');
+    loadUserData();
+  } else {
+    showScreen('auth');
+  }
+  
+  // Rest of your existing initialization code...
+});
+        
     </script>
 </body>
 </html>
